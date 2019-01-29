@@ -1,23 +1,35 @@
 <template>
   <div id="app">
-    <div id="nav">
-      <router-link to="/">Home</router-link> |
-      <router-link to="/about">About</router-link>
+    <div id="nav" v-if="!isHome">
+      <router-link to="/">首页</router-link>
     </div>
     <router-view />
   </div>
 </template>
+
+<script>
+export default {
+  computed: {
+    isHome() {
+      return this.$route.name === "home";
+    }
+  },
+  mounted() {}
+};
+</script>
 
 <style lang="scss">
 #app {
   font-family: "Avenir", Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  text-align: center;
   color: #2c3e50;
+  position: relative;
 }
 #nav {
-  padding: 30px;
+  position: absolute;
+  left: 5px;
+  top: 5px;
   a {
     font-weight: bold;
     color: #2c3e50;
