@@ -8,6 +8,7 @@
 </template>
 
 <script>
+window.THREE = require("three");
 export default {
   computed: {
     isHome() {

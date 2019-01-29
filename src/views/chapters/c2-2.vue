@@ -5,7 +5,21 @@
 <script>
 import * as THREE from "three";
 
+import "three/examples/js/geometries/ConvexGeometry.js";
+import "three/examples/js/QuickHull.js";
+import "three/examples/js/ParametricGeometries.js";
+
 import { GUI } from "dat.gui";
+
+function createMultiMaterialObject(geometry, materials) {
+  let group = new THREE.Group();
+
+  for (let i = 0, l = materials.length; i < l; i++) {
+    group.add(new THREE.Mesh(geometry, materials[i]));
+  }
+
+  return group;
+}
 
 export default {
   data() {
@@ -23,7 +37,8 @@ export default {
       sphere: {},
       plane: {},
       controls: {},
-      planeGeometry: {}
+      planeGeometry: {},
+      numberOfObjects: 0
     };
   },
   methods: {
@@ -35,7 +50,7 @@ export default {
 
       let planeGeometry = new THREE.PlaneGeometry(60, 40, 1, 1);
       this.planeGeometry = planeGeometry;
-      let planeMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 });
+      let planeMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff });
       let plane = new THREE.Mesh(planeGeometry, planeMaterial);
 
       plane.receiveShadow = true;
@@ -47,9 +62,10 @@ export default {
 
       this.scene.add(plane);
 
-      this.camera.position.x = -30;
-      this.camera.position.y = 40;
-      this.camera.position.z = 30;
+      this.addGeometries();
+      this.camera.position.x = -50;
+      this.camera.position.y = 30;
+      this.camera.position.z = 20;
       this.camera.lookAt(this.scene.position);
 
       let ambientLight = new THREE.AmbientLight(0x0c0c0c);
@@ -60,10 +76,101 @@ export default {
       spotLight.castShadow = true;
       this.scene.add(spotLight);
 
-      let dom = document
+      document
         .getElementById("container")
         .appendChild(this.renderer.domElement);
       this.renderScene();
+    },
+
+    addGeometries() {
+      let geoms = [];
+
+      geoms.push(new THREE.CylinderGeometry(1, 4, 4));
+
+      // basic cube
+      geoms.push(new THREE.BoxGeometry(2, 2, 2));
+
+      // basic spherer
+      geoms.push(new THREE.SphereGeometry(2));
+
+      geoms.push(new THREE.IcosahedronGeometry(4));
+
+      // create a convex shape (a shape without dents)
+      // using a couple of points
+      // for instance a cube
+      let points = [
+        new THREE.Vector3(2, 2, 2),
+        new THREE.Vector3(2, 2, -2),
+        new THREE.Vector3(-2, 2, -2),
+        new THREE.Vector3(-2, 2, 2),
+        new THREE.Vector3(2, -2, 2),
+        new THREE.Vector3(2, -2, -2),
+        new THREE.Vector3(-2, -2, -2),
+        new THREE.Vector3(-2, -2, 2)
+      ];
+
+      geoms.push(new THREE.ConvexGeometry(points));
+
+      // create a lathgeometry
+      //http://en.wikipedia.org/wiki/Lathe_(graphics)
+      let pts = []; //points array - the path profile points will be stored here
+      let detail = 0.1; //half-circle detail - how many angle increments will be used to generate points
+      let radius = 3; //radius for half_sphere
+      for (
+        let angle = 0.0;
+        angle < Math.PI;
+        angle += detail //loop from 0.0 radians to PI (0 - 180 degrees)
+      )
+        pts.push(
+          new THREE.Vector3(
+            Math.cos(angle) * radius,
+            0,
+            Math.sin(angle) * radius
+          )
+        ); //angle/radius to x,z
+      geoms.push(new THREE.LatheGeometry(pts, 12));
+
+      // create a OctahedronGeometry
+      geoms.push(new THREE.OctahedronGeometry(3));
+
+      // create a geometry based on a function
+      geoms.push(
+        new THREE.ParametricGeometry(
+          THREE.ParametricGeometries.mobius3d,
+          20,
+          10
+        )
+      );
+
+      //
+      geoms.push(new THREE.TetrahedronGeometry(3));
+
+      geoms.push(new THREE.TorusGeometry(3, 1, 10, 10));
+
+      geoms.push(new THREE.TorusKnotGeometry(3, 0.5, 50, 20));
+
+      let j = 0;
+      for (let i = 0; i < geoms.length; i++) {
+        let materials = [
+          new THREE.MeshLambertMaterial({
+            color: Math.random() * 0xffffff,
+            flatShading: THREE.FlatShading
+          }),
+          new THREE.MeshBasicMaterial({ color: 0x000000, wireframe: true })
+        ];
+
+        let mesh = createMultiMaterialObject(geoms[i], materials);
+        mesh.traverse(function(e) {
+          e.castShadow = true;
+        });
+
+        mesh.position.x = -24 + (i % 4) * 12;
+        mesh.position.y = 4;
+        mesh.position.z = -8 + j * 12;
+
+        if ((i + 1) % 4 == 0) j++;
+        this.scene.add(mesh);
+      }
     },
     renderScene() {
       this.scene.traverse(e => {
